@@ -95,3 +95,9 @@ exports.updateProfile = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+// BONUS PART RECALLED (OTP)
+import sendEmail from "../utils/sendEmail.js";
+
+// call it if the user forgets the password
+await sendEmail(user.email, "Password Reset OTP", "<p>Your OTP is 123456</p>");
+
