@@ -1,6 +1,7 @@
 const User = require('../models/userModel');
 const Booking = require('../models/bookingModel');
 const Event = require('../models/eventModel');
+const bcrypt = require('bcryptjs');
 
 // Get all users (Admin)
 exports.getAllUsers = async (req, res) => {
@@ -64,6 +65,24 @@ exports.updateProfile = async (req, res) => {
     const user = await User.findByIdAndUpdate(req.user.id, { name, email }, { new: true });
     if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Forget password (Public)
+exports.forgetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
   }
