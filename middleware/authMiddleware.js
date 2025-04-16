@@ -1,21 +1,31 @@
 const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-exports.authenticate = (req, res, next) => {
-  // Get token from Authorization header
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
+// JWT authentication middleware
+exports.authenticate = async (req, res, next) => {
+  const token = req.header('x-auth-token');
   if (!token) {
-    return res.status(401).json({ message: 'No token, authorization denied' });
+    return res.status(401).json({ msg: 'No token, authorization denied' });
   }
 
   try {
-    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Attach user information to request object
-    req.user = { id: decoded.id, role: decoded.role };
+    req.user = decoded; // Store the user data (from token) in the request object
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Token is not valid' });
+  } catch (err) {
+    res.status(401).json({ msg: 'Token is not valid' });
+  }
+};
+
+// Check if user is an organizer
+exports.isOrganizer = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user || user.role !== 'organizer') {
+      return res.status(403).json({ msg: 'Not authorized' });
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
   }
 };
