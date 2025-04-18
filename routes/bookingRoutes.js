@@ -5,17 +5,17 @@ import {
   getBookingById,
   cancelBooking
 } from '../controllers/bookingController.js';
-import { protect, authorize } from '../middleware/authMiddleware.js';
+import { authenticate, isUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
 // POST /api/v1/bookings — Book tickets for an event
-router.post('/', protect, authorize('user'), bookTickets);
+router.post('/', authenticate, isUser, bookTickets);
 
 // GET /api/v1/bookings/:id — Get booking details by ID
-router.get('/:id', protect, authorize('user'), getBookingById);
+router.get('/:id', authenticate, isUser, getBookingById);
 
 // DELETE /api/v1/bookings/:id — Cancel a booking
-router.delete('/:id', protect, authorize('user'), cancelBooking);
+router.delete('/:id', authenticate, isUser, cancelBooking);
 
 export default router;

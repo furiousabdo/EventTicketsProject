@@ -1,5 +1,5 @@
-import Booking from '../models/bookingModel.js';
-import Event from '../models/eventModel.js';
+import Booking from '../models/Booking.js';
+import Event from '../models/Event.js';
 
 // Book tickets
 export const bookTickets = async (req, res) => {

@@ -1,31 +1,38 @@
+// authMiddleware.js
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
 
-// JWT authentication middleware
-exports.authenticate = async (req, res, next) => {
-  const token = req.header('x-auth-token');
-  if (!token) {
-    return res.status(401).json({ msg: 'No token, authorization denied' });
-  }
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Store the user data (from token) in the request object
-    next();
-  } catch (err) {
-    res.status(401).json({ msg: 'Token is not valid' });
-  }
+// Authenticate user
+const authenticate = (req, res, next) => {
+    const token = req.header('x-auth-token');
+    if (!token) {
+        return res.status(401).json({ message: 'No token, authorization denied' });
+    }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded.user;
+        console.log("Authenticated User:", req.user); // Log authenticated user info
+        next();
+    } catch (err) {
+        res.status(401).json({ message: 'Token is not valid' });
+    }
 };
 
-// Check if user is an organizer
-exports.isOrganizer = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user || user.role !== 'organizer') {
-      return res.status(403).json({ msg: 'Not authorized' });
+// Admin role middleware
+const isAdmin = (req, res, next) => {
+    console.log("User Role:", req.user ? req.user.role : "No user role"); // Log user role
+    if (req.user && req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
     }
     next();
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
 };
+
+// Organizer role middleware
+const isOrganizer = (req, res, next) => {
+    console.log("User Role:", req.user ? req.user.role : "No user role"); // Log user role
+    if (req.user && req.user.role !== 'organizer') {
+        return res.status(403).json({ message: 'Organizer access required' });
+    }
+    next();
+};
+
+module.exports = { authenticate, isAdmin, isOrganizer };

@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 
+
 dotenv.config(); // Load environment variables from .env
 
 const app = express();
