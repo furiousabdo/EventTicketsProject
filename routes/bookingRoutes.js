@@ -5,7 +5,8 @@ const {
   getBookingById,
   cancelBooking
 } = require('../controllers/bookingController');
-const { authenticate, isUser } = require('../middleware/authMiddleware');
+const { authenticate} = require('../middleware/authMiddleware');
+const { isUser } = require('../middleware/roleMiddleware');
 
 const router = express.Router();
 
