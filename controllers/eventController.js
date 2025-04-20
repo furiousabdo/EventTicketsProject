@@ -1,7 +1,7 @@
 const Event = require('../models/Event');
 
 // Create an event
-exports.createEvent = async (req, res) => {
+const createEvent = async (req, res) => {
   const { title, description, date, location, ticketsAvailable, price } = req.body;
   try {
     const newEvent = new Event({
@@ -23,7 +23,7 @@ exports.createEvent = async (req, res) => {
 };
 
 // Get all events
-exports.getAllEvents = async (req, res) => {
+const getAllEvents = async (req, res) => {
   try {
     const events = await Event.find().populate('organizer', 'name email');
     res.json(events);
@@ -34,7 +34,7 @@ exports.getAllEvents = async (req, res) => {
 };
 
 // Get events created by the organizer (user)
-exports.getUserEvents = async (req, res) => {
+const getUserEvents = async (req, res) => {
   try {
     const events = await Event.find({ organizer: req.user.id }).populate('organizer', 'name email');
     res.json(events);
@@ -45,7 +45,7 @@ exports.getUserEvents = async (req, res) => {
 };
 
 // Get event analytics (e.g., for an organizer to view booking stats)
-exports.getEventAnalytics = async (req, res) => {
+const getEventAnalytics = async (req, res) => {
   try {
     const events = await Event.find({ organizer: req.user.id });
     const eventStats = events.map(event => ({
@@ -62,6 +62,7 @@ exports.getEventAnalytics = async (req, res) => {
   }
 };
 
+// Export all functions at the end
 module.exports = {
   createEvent,
   getAllEvents,

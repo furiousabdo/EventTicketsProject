@@ -1,8 +1,8 @@
-import Booking from '../models/Booking.js';
-import Event from '../models/Event.js';
+const Booking = require('../models/Booking');
+const Event = require('../models/Event');
 
 // Book tickets
-export const bookTickets = async (req, res) => {
+const bookTickets = async (req, res) => {
   try {
     const { eventId, ticketsBooked } = req.body;
     const event = await Event.findById(eventId);
@@ -35,7 +35,7 @@ export const bookTickets = async (req, res) => {
 };
 
 // Get current user's bookings
-export const getMyBookings = async (req, res) => {
+const getMyBookings = async (req, res) => {
   try {
     const bookings = await Booking.find({ user: req.user._id }).populate('event');
     res.status(200).json(bookings);
@@ -45,7 +45,7 @@ export const getMyBookings = async (req, res) => {
 };
 
 // Cancel a booking
-export const cancelBooking = async (req, res) => {
+const cancelBooking = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id);
 
@@ -73,7 +73,7 @@ export const cancelBooking = async (req, res) => {
 };
 
 // Get booking by ID
-export const getBookingById = async (req, res) => {
+const getBookingById = async (req, res) => {
   try {
     const booking = await Booking.findById(req.params.id).populate('event');
 
@@ -85,4 +85,11 @@ export const getBookingById = async (req, res) => {
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
+};
+
+module.exports = {
+  bookTickets,
+  getMyBookings,
+  cancelBooking,
+  getBookingById,
 };

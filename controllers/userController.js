@@ -111,6 +111,8 @@ const getProfile = async (req, res) => {
     }
 };
 
+
+
 // Update current user profile
 const updateProfile = async (req, res) => {
     const { name, email } = req.body;
@@ -139,5 +141,5 @@ module.exports = {
     register,
     login,
     getProfile,
-    updateProfile
+    updateProfile,
 };

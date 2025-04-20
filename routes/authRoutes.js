@@ -1,6 +1,8 @@
 const express = require('express');
 const authController = require('../controllers/authController');
 const authMiddleware = require('../middleware/authMiddleware');
+const eventController = require('../controllers/eventController');
+const bookingController = require('../controllers/bookingController');
 const { protect, authorizeRoles } = require('../middleware/authMiddleware');
 
 
