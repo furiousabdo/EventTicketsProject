@@ -53,54 +53,67 @@ const deleteUser = async (req, res) => {
     }
 };
 
-// Register user
 const register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
+  
+    // Validate role, default to 'user' if invalid
+    const userRole = role === 'admin' || role === 'organizer' ? role : 'user';
+  
     try {
+        // Check if email already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email is already registered' });
+        }
+  
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
-
+  
         const newUser = new User({
             name,
             email,
             password: hashedPassword,
+            role: userRole,
         });
-
+  
         await newUser.save();
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
-};
-
-// Login user
+  };
+  
 const login = async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({ message: 'Invalid credentials (user not found)' });
         }
-
+  
+        console.log("Entered Password:", password);
+        console.log("Stored Hashed Password:", user.password);
+  
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ message: 'Invalid credentials' });
+            return res.status(400).json({ message: 'Invalid credentials (wrong password)' });
         }
-
+  
         const payload = {
             user: {
                 id: user._id,
                 role: user.role,
             },
         };
-
+  
         const token = jwt.sign(payload, 'yourSecretKey', { expiresIn: '1h' });
         res.status(200).json({ token });
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Server error' });
     }
-};
-
+  };
 // Get current user profile
 const getProfile = async (req, res) => {
     try {

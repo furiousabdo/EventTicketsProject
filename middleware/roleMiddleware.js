@@ -1,4 +1,4 @@
-// roleMiddleware.js
+
 
 // Admin role middleware
 module.exports.isAdmin = (req, res, next) => {

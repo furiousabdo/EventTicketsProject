@@ -25,13 +25,22 @@ const createEvent = async (req, res) => {
 // Get all events
 const getAllEvents = async (req, res) => {
   try {
-    const events = await Event.find().populate('organizer', 'name email');
-    res.json(events);
+      let events;
+
+      if (req.user.role === 'admin') {
+          // Admin gets everything
+          events = await Event.find();
+      } else {
+          // Public gets only approved events
+          events = await Event.find({ approved: true });
+      }
+
+      res.status(200).json(events);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+      res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 // Get events created by the organizer (user)
 const getUserEvents = async (req, res) => {

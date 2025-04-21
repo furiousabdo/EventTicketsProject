@@ -4,54 +4,68 @@ const jwt = require('jsonwebtoken');
 
 // Register a new user
 exports.register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
+
+  // Validate role, default to 'user' if invalid
+  const userRole = role === 'admin' || role === 'organizer' ? role : 'user';
 
   try {
-    // Check if the user already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+      // Check if email already exists
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+          return res.status(400).json({ message: 'Email is already registered' });
+      }
 
-    // Create a new user
-    const user = new User({ name, email, password });
-    await user.save();
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Send success response
-    res.status(201).json({ message: 'User created successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+      const newUser = new User({
+          name,
+          email,
+          password: hashedPassword,
+          role: userRole,
+      });
+
+      await newUser.save();
+      res.status(201).json({ message: 'User registered successfully' });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
   }
 };
 
 // User login
 exports.login = async (req, res) => {
   const { email, password } = req.body;
-
   try {
-    // Find the user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+      const user = await User.findOne({ email });
+      if (!user) {
+          return res.status(400).json({ message: 'Invalid credentials (user not found)' });
+      }
 
-    // Compare password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
+      console.log("Entered Password:", password);
+      console.log("Stored Hashed Password:", user.password);
 
-    // Generate JWT token
-    const token = user.generateToken();
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+          return res.status(400).json({ message: 'Invalid credentials (wrong password)' });
+      }
 
-    // Send token as response
-    res.json({ token });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+      const payload = {
+          user: {
+              id: user._id,
+              role: user.role,
+          },
+      };
+
+      const token = jwt.sign(payload, 'yourSecretKey', { expiresIn: '1h' });
+      res.status(200).json({ token });
+  } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 // Get current user's profile
 exports.getProfile = async (req, res) => {
