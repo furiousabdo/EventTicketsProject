@@ -1,21 +1,22 @@
-import express from 'express';
-import {
+const express = require('express');
+const {
   bookTickets,
   getMyBookings,
   getBookingById,
   cancelBooking
-} from '../controllers/bookingController.js';
-import { protect, authorize } from '../middleware/authMiddleware.js';
+} = require('../controllers/bookingController');
+const { authenticate } = require('../middleware/authMiddleware');
+const { isUser } = require('../middleware/roleMiddleware');
 
 const router = express.Router();
 
 // POST /api/v1/bookings — Book tickets for an event
-router.post('/', protect, authorize('user'), bookTickets);
+router.post('/', authenticate, isUser, bookTickets);
 
 // GET /api/v1/bookings/:id — Get booking details by ID
-router.get('/:id', protect, authorize('user'), getBookingById);
+router.get('/:id', authenticate, isUser, getBookingById);
 
 // DELETE /api/v1/bookings/:id — Cancel a booking
-router.delete('/:id', protect, authorize('user'), cancelBooking);
+router.delete('/:id', authenticate, isUser, cancelBooking);
 
-export default router;
+module.exports = router;

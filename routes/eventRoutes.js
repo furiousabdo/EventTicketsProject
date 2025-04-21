@@ -1,13 +1,29 @@
+// routes/eventRoutes.js
 const express = require('express');
-const eventController = require('../controllers/eventController');
-const authMiddleware = require('../middleware/authMiddleware');
-
+const {
+    createEvent,
+    getEvents,
+    getAllEvents,
+    getEventById,
+    updateEvent,
+    deleteEvent,
+    getMyEventsAnalytics
+} = require('../controllers/eventController');
+const { protect, allowRoles } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// Event routes for organizers (create, get their events, analytics)
-router.post('/events', authMiddleware.authenticate, authMiddleware.isOrganizer, eventController.createEvent);
-router.get('/events', eventController.getAllEvents); // Anyone can view all events
-router.get('/users/:id/events', authMiddleware.authenticate, authMiddleware.isOrganizer, eventController.getUserEvents);
-router.get('/users/:id/events/analytics', authMiddleware.authenticate, authMiddleware.isOrganizer, eventController.getEventAnalytics);
+router
+    .route('/')
+    .post(protect, allowRoles('Organizer'), createEvent)
+    .get(getEvents);
+
+router.get('/all', protect, allowRoles('Admin'), getAllEvents);
+router.get('/:id', getEventById);
+router
+    .route('/:id')
+    .put(protect, allowRoles('Organizer','Admin'), updateEvent)
+    .delete(protect, allowRoles('Organizer','Admin'), deleteEvent);
+
+router.get('/analytics', protect, allowRoles('Organizer'), getMyEventsAnalytics);
 
 module.exports = router;

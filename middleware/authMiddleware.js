@@ -1,31 +1,34 @@
+// middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
 
-// JWT authentication middleware
-exports.authenticate = async (req, res, next) => {
-  const token = req.header('x-auth-token');
-  if (!token) {
-    return res.status(401).json({ msg: 'No token, authorization denied' });
-  }
+exports.protect = asyncHandler(async (req, res, next) => {
+    let token = req.headers.authorization?.startsWith('Bearer')
+        ? req.headers.authorization.split(' ')[1]
+        : null;
+    if (!token) {
+        res.status(401);
+        throw new Error('Not authorized, no token');
+    }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = await User.findById(decoded.id).select('-password');
+        next();
+    } catch (err) {
+        res.status(401);
+        throw new Error('Not authorized, token failed');
+    }
+});
 
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded; // Store the user data (from token) in the request object
-    next();
-  } catch (err) {
-    res.status(401).json({ msg: 'Token is not valid' });
-  }
-};
-
-// Check if user is an organizer
-exports.isOrganizer = async (req, res, next) => {
-  try {
-    const user = await User.findById(req.user.id);
-    if (!user || user.role !== 'organizer') {
-      return res.status(403).json({ msg: 'Not authorized' });
+exports.allowRoles = (...roles) => (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+        res.status(403);
+        throw new Error(`Role ${req.user.role} not authorized`);
     }
     next();
-  } catch (err) {
-    res.status(500).json({ msg: 'Server error' });
-  }
 };
+
+// aliases so your routes can still import `authenticate` and `authorizeRoles`
+exports.authenticate = exports.protect;
+exports.authorizeRoles = exports.allowRoles;
