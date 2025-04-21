@@ -56,8 +56,10 @@ exports.login = async (req, res) => {
           },
       };
 
-      const token = jwt.sign(payload, 'yourSecretKey', { expiresIn: '1h' });
+      const token = jwt.sign(payload, 'thisistheway', { expiresIn: '1h' });
       res.status(200).json({ token });
+      console.log("Generated Token:", token);  // Log the generated token to check
+
   } catch (err) {
       console.error(err);
       res.status(500).json({ message: 'Server error' });

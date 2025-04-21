@@ -7,8 +7,8 @@ const authController = require('../controllers/authController');
 const { protect, authorizeRoles, authenticate } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// router.post('/events', protect, authorizeRoles('organizer'), eventController.createEvent);
-// router.post('/bookings', protect, authorizeRoles('user'), bookingController.bookTickets);
+//router.post('/events', protect, authorizeRoles('organizer'), eventController.createEvent);
+//router.post('/bookings', protect, authorizeRoles('user'), bookingController.bookTickets);
 
 router.post('/register', authController.register);  // ✅ Works after move
 router.post('/login', authController.login);
