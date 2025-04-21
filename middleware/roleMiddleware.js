@@ -1,5 +1,3 @@
-
-
 // Admin role middleware
 module.exports.isAdmin = (req, res, next) => {
     if (req.user && req.user.role !== 'admin') {
@@ -18,7 +16,7 @@ module.exports.isOrganizer = (req, res, next) => {
 
 // User role middleware
 module.exports.isUser = (req, res, next) => {
-    if (req.user && req.user.role !== 'user') {
+    if (req.user && req.user.role !== 'Standard User') {
         return res.status(403).json({ message: 'User access required' });
     }
     next();

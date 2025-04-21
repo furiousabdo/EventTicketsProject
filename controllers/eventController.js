@@ -1,80 +1,83 @@
+// controllers/eventController.js
 const Event = require('../models/Event');
+const Booking = require('../models/Booking');
+const asyncHandler = require('express-async-handler');
 
-// Create an event
-const createEvent = async (req, res) => {
-  const { title, description, date, location, ticketsAvailable, price } = req.body;
-  try {
-    const newEvent = new Event({
-      title,
-      description,
-      date,
-      location,
-      organizer: req.user.id, // Organizer is the logged-in user
-      ticketsAvailable,
-      price,
-    });
+// Create event
+exports.createEvent = asyncHandler(async (req, res) => {
+  const { title, description, date, location, price, ticketsAvailable } = req.body;
+  const event = await Event.create({
+    title, description, date, location, price, ticketsAvailable,
+    organizer: req.user._id
+  });
+  res.status(201).json(event);
+});
 
-    await newEvent.save();
-    res.status(201).json(newEvent);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+// Get approved events
+exports.getEvents = asyncHandler(async (req, res) => {
+  const events = await Event.find({ status: 'approved' });
+  res.json(events);
+});
+
+// Get all events (admin)
+exports.getAllEvents = asyncHandler(async (req, res) => {
+  const events = await Event.find();
+  res.json(events);
+});
+
+// Get single event
+exports.getEventById = asyncHandler(async (req, res) => {
+  const event = await Event.findById(req.params.id);
+  if (!event) {
+    res.status(404);
+    throw new Error('Event not found');
   }
-};
+  res.json(event);
+});
 
-// Get all events
-const getAllEvents = async (req, res) => {
-  try {
-      let events;
-
-      if (req.user.role === 'admin') {
-          // Admin gets everything
-          events = await Event.find();
-      } else {
-          // Public gets only approved events
-          events = await Event.find({ approved: true });
-      }
-
-      res.status(200).json(events);
-  } catch (err) {
-      res.status(500).json({ message: 'Server error' });
+// Update event
+exports.updateEvent = asyncHandler(async (req, res) => {
+  const event = await Event.findById(req.params.id);
+  if (!event) {
+    res.status(404);
+    throw new Error('Event not found');
   }
-};
-
-
-// Get events created by the organizer (user)
-const getUserEvents = async (req, res) => {
-  try {
-    const events = await Event.find({ organizer: req.user.id }).populate('organizer', 'name email');
-    res.json(events);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+  if (req.user.role === 'Organizer' && !event.organizer.equals(req.user._id)) {
+    res.status(403);
+    throw new Error('Not authorized to update this event');
   }
-};
+  Object.assign(event, req.body);
+  const updated = await event.save();
+  res.json(updated);
+});
 
-// Get event analytics (e.g., for an organizer to view booking stats)
-const getEventAnalytics = async (req, res) => {
-  try {
-    const events = await Event.find({ organizer: req.user.id });
-    const eventStats = events.map(event => ({
-      eventId: event._id,
-      title: event.title,
-      ticketsAvailable: event.ticketsAvailable,
-      bookings: 0, // This could be connected to the booking model later
-    }));
-
-    res.json(eventStats);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+// Delete event
+exports.deleteEvent = asyncHandler(async (req, res) => {
+  const event = await Event.findById(req.params.id);
+  if (!event) {
+    res.status(404);
+    throw new Error('Event not found');
   }
-};
+  if (req.user.role === 'Organizer' && !event.organizer.equals(req.user._id)) {
+    res.status(403);
+    throw new Error('Not authorized to delete this event');
+  }
+  await event.deleteOne();
+  res.json({ message: 'Event removed' });
+});
 
-// Export all functions at the end
-module.exports = {
-  createEvent,
-  getAllEvents,
-  getUserEvents,
-  getEventAnalytics,
-};
+// Organizer analytics
+exports.getMyEventsAnalytics = asyncHandler(async (req, res) => {
+  const events = await Event.find({ organizer: req.user._id });
+  const analytics = await Promise.all(events.map(async ev => {
+    const booked = await Booking.countDocuments({ event: ev._id });
+    return {
+      eventId: ev._id,
+      title: ev.title,
+      ticketsAvailable: ev.ticketsAvailable,
+      ticketsBooked: booked,
+      percentageBooked: ((booked / (ev.ticketsAvailable + booked)) * 100).toFixed(2)
+    };
+  }));
+  res.json(analytics);
+});

@@ -1,96 +1,60 @@
+// controllers/bookingController.js
 const Booking = require('../models/Booking');
 const Event = require('../models/Event');
+const asyncHandler = require('express-async-handler');
 
 // Book tickets
-const bookTickets = async (req, res) => {
-  try {
-    const { eventId, ticketsBooked } = req.body;
-    const event = await Event.findById(eventId);
-
-    if (!event || event.status !== 'approved') {
-      return res.status(404).json({ message: 'Event not found or not approved' });
-    }
-
-    if (event.tickets < ticketsBooked) {
-      return res.status(400).json({ message: 'Not enough tickets available' });
-    }
-
-    const totalPrice = ticketsBooked * event.price;
-
-    const booking = await Booking.create({
-      user: req.user._id,
-      event: eventId,
-      ticketsBooked,
-      totalPrice,
-      status: 'confirmed',
-    });
-
-    event.tickets -= ticketsBooked;
-    await event.save();
-
-    res.status(201).json({ message: 'Booking confirmed', booking });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+exports.bookTickets = asyncHandler(async (req, res) => {
+  const { eventId, quantity } = req.body;
+  const event = await Event.findById(eventId);
+  if (!event) {
+    res.status(404);
+    throw new Error('Event not found');
   }
-};
-
-// Get current user's bookings
-const getMyBookings = async (req, res) => {
-  try {
-    const bookings = await Booking.find({ user: req.user._id }).populate('event');
-    res.status(200).json(bookings);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+  if (event.ticketsAvailable < quantity) {
+    res.status(400);
+    throw new Error('Not enough tickets available');
   }
-};
-
-// Cancel a booking
-const cancelBooking = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id);
-
-    if (!booking || booking.user.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ message: 'Booking not found' });
-    }
-
-    if (booking.status === 'canceled') {
-      return res.status(400).json({ message: 'Booking already canceled' });
-    }
-
-    const event = await Event.findById(booking.event);
-    if (event) {
-      event.tickets += booking.ticketsBooked;
-      await event.save();
-    }
-
-    booking.status = 'canceled';
-    await booking.save();
-
-    res.status(200).json({ message: 'Booking canceled and tickets refunded', booking });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+  event.ticketsAvailable -= quantity;
+  await event.save();
+  const totalPrice = quantity * event.price;
+  const booking = await Booking.create({
+    user: req.user._id,
+    event: eventId,
+    quantity,
+    totalPrice
+  });
+  res.status(201).json(booking);
+});
 
 // Get booking by ID
-const getBookingById = async (req, res) => {
-  try {
-    const booking = await Booking.findById(req.params.id).populate('event');
-
-    if (!booking || booking.user.toString() !== req.user._id.toString()) {
-      return res.status(404).json({ message: 'Booking not found' });
-    }
-
-    res.status(200).json(booking);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+exports.getBookingById = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id).populate('event');
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found');
   }
-};
+  if (!booking.user.equals(req.user._id)) {
+    res.status(403);
+    throw new Error('Not authorized to view this booking');
+  }
+  res.json(booking);
+});
 
-module.exports = {
-  bookTickets,
-  getMyBookings,
-  cancelBooking,
-  getBookingById,
-};
-  
+// Cancel booking
+exports.cancelBooking = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found');
+  }
+  if (!booking.user.equals(req.user._id)) {
+    res.status(403);
+    throw new Error('Not authorized to cancel this booking');
+  }
+  const event = await Event.findById(booking.event);
+  event.ticketsAvailable += booking.quantity;
+  await event.save();
+  await booking.remove();
+  res.json({ message: 'Booking cancelled' });
+});

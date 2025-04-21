@@ -1,38 +1,34 @@
-// authMiddleware.js
+// middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
+const User = require('../models/User');
 
-// Authenticate user
-const authenticate = (req, res, next) => {
-    const token = req.header('x-auth-token');
+exports.protect = asyncHandler(async (req, res, next) => {
+    let token = req.headers.authorization?.startsWith('Bearer')
+        ? req.headers.authorization.split(' ')[1]
+        : null;
     if (!token) {
-        return res.status(401).json({ message: 'No token, authorization denied' });
+        res.status(401);
+        throw new Error('Not authorized, no token');
     }
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded.user;
-        console.log("Authenticated User:", req.user); // Log authenticated user info
+        req.user = await User.findById(decoded.id).select('-password');
         next();
     } catch (err) {
-        res.status(401).json({ message: 'Token is not valid' });
+        res.status(401);
+        throw new Error('Not authorized, token failed');
     }
-};
+});
 
-// Admin role middleware
-const isAdmin = (req, res, next) => {
-    console.log("User Role:", req.user ? req.user.role : "No user role"); // Log user role
-    if (req.user && req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin access required' });
-    }
-    next();
-};
-
-// Organizer role middleware
-const isOrganizer = (req, res, next) => {
-    console.log("User Role:", req.user ? req.user.role : "No user role"); // Log user role
-    if (req.user && req.user.role !== 'organizer') {
-        return res.status(403).json({ message: 'Organizer access required' });
+exports.allowRoles = (...roles) => (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+        res.status(403);
+        throw new Error(`Role ${req.user.role} not authorized`);
     }
     next();
 };
 
-module.exports = { authenticate, isAdmin, isOrganizer };
+// aliases so your routes can still import `authenticate` and `authorizeRoles`
+exports.authenticate = exports.protect;
+exports.authorizeRoles = exports.allowRoles;

@@ -1,111 +1,83 @@
+// controllers/authController.js
+const asyncHandler = require('express-async-handler');
 const User = require('../models/User');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const generateToken = require('../utils/generateToken');
 
-// Register a new user
-exports.register = async (req, res) => {
-  const { name, email, password, role } = req.body;
-
-  // Validate role, default to 'user' if invalid
-  const userRole = role === 'admin' || role === 'organizer' ? role : 'user';
-
-  try {
-      // Check if email already exists
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-          return res.status(400).json({ message: 'Email is already registered' });
-      }
-
-      const salt = await bcrypt.genSalt(10);
-      const newUser = new User({
-          name,
-          email,
-          password: password,
-          role: userRole,
-      });
-
-      await newUser.save();
-      res.status(201).json({ message: 'User registered successfully' });
-  } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// User login
-exports.login = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-      const user = await User.findOne({ email });
-      if (!user) {
-          return res.status(400).json({ message: 'Invalid credentials (user not found)' });
-      }
-
-      console.log("Entered Password:", password);
-      console.log("Stored Hashed Password:", user.password);
-
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-          return res.status(400).json({ message: 'Invalid credentials (wrong password)' });
-      }
-
-      const payload = {
-          user: {
-              id: user._id,
-              role: user.role,
-          },
-      };
-
-      const token = jwt.sign(payload, 'thisistheway', { expiresIn: '1h' });
-      res.status(200).json({ token });
-      console.log("Generated Token:", token);  // Log the generated token to check
-
-  } catch (err) {
-      console.error(err);
-      res.status(500).json({ message: 'Server error' });
-  }
-};
-
-
-// Get current user's profile
-exports.getProfile = async (req, res) => {
-  try {
-    // Find user by ID (from JWT)
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+// @desc    Register new user
+// @route   POST /api/v1/register
+// @access  Public
+exports.register = asyncHandler(async (req, res) => {
+    const { name, email, password, role } = req.body;
+    if (await User.findOne({ email })) {
+        res.status(400);
+        throw new Error('User already exists');
     }
+    const user = await User.create({ name, email, password, role });
+    res.status(201).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user._id),
+    });
+});
 
-    // Send user profile data
-    res.json({ name: user.name, email: user.email, role: user.role });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-// Update current user's profile
-exports.updateProfile = async (req, res) => {
-  const { name, email } = req.body;
-
-  try {
-    // Find user by ID (from JWT)
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+// @desc    Authenticate user & get token
+// @route   POST /api/v1/login
+// @access  Public
+exports.login = asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+    if (user && await user.matchPassword(password)) {
+        return res.json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            token: generateToken(user._id),
+        });
     }
+    res.status(401);
+    throw new Error('Invalid email or password');
+});
 
-    // Update user fields
-    if (name) user.name = name;
-    if (email) user.email = email;
-
-    // Save updated user
+// @desc    Reset password
+// @route   PUT /api/v1/forgetPassword
+// @access  Public
+exports.forgetPassword = asyncHandler(async (req, res) => {
+    const { email, newPassword } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+    user.password = newPassword;
     await user.save();
+    res.json({ message: 'Password updated successfully' });
+});
 
-    // Send success response
-    res.json({ message: 'Profile updated successfully' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
+// @desc    Get logged in user profile
+// @route   GET /api/v1/profile
+// @access  Private
+exports.getProfile = asyncHandler(async (req, res) => {
+    res.json(req.user);
+});
+
+// @desc    Update logged in user profile
+// @route   PUT /api/v1/profile
+// @access  Private
+exports.updateProfile = asyncHandler(async (req, res) => {
+    const user = req.user;
+    const { name, email, password } = req.body;
+    if (name)  user.name = name;
+    if (email) user.email = email;
+    if (password) user.password = password;  // will be hashed by pre-save hook
+    const updated = await user.save();
+    res.json({
+        _id: updated._id,
+        name: updated.name,
+        email: updated.email,
+        role: updated.role,
+        token: generateToken(updated._id),
+    });
+});
