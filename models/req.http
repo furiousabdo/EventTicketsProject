@@ -1,0 +1,10 @@
+### REGISTER NEW USER
+POST http://localhost:5000/api/v1/register
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "johndoe@example.com",
+  "password": "MySecurePass123",
+  "role": "user"
+}
