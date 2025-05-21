@@ -1,21 +1,34 @@
+// middleware/authMiddleware.js
 const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
+const User = require('../models/User');
 
-exports.authenticate = (req, res, next) => {
-  // Get token from Authorization header
-  const token = req.header('Authorization')?.replace('Bearer ', '');
+exports.protect = asyncHandler(async (req, res, next) => {
+    let token = req.headers.authorization?.startsWith('Bearer')
+        ? req.headers.authorization.split(' ')[1]
+        : null;
+    if (!token) {
+        res.status(401);
+        throw new Error('Not authorized, no token');
+    }
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = await User.findById(decoded.id).select('-password');
+        next();
+    } catch (err) {
+        res.status(401);
+        throw new Error('Not authorized, token failed');
+    }
+});
 
-  if (!token) {
-    return res.status(401).json({ message: 'No token, authorization denied' });
-  }
-
-  try {
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Attach user information to request object
-    req.user = { id: decoded.id, role: decoded.role };
+exports.allowRoles = (...roles) => (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+        res.status(403);
+        throw new Error(`Role ${req.user.role} not authorized`);
+    }
     next();
-  } catch (error) {
-    res.status(401).json({ message: 'Token is not valid' });
-  }
 };
+
+// aliases so your routes can still import `authenticate` and `authorizeRoles`
+exports.authenticate = exports.protect;
+exports.authorizeRoles = exports.allowRoles;
