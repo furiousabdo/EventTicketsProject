@@ -1,15 +1,35 @@
+// routes/authRoutes.js
 const express = require('express');
-const authController = require('../controllers/authController');
-const authMiddleware = require('../middleware/authMiddleware');
-
+const {
+    register,
+    login,
+    forgetPassword,
+    getProfile,
+    updateProfile,
+    setupMFA,
+    verifyMFA,
+    verifyMFALogin,
+    disableMFA
+} = require('../controllers/authController');
+const { authenticate, authorizeRoles } = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// Public routes
-router.post('/register', authController.register); // Register a new user
-router.post('/login', authController.login); // Login user
+router.post('/register', register);
+router.post('/login', login);
+router.put('/forgetPassword', forgetPassword);
+router.get('/me', authenticate, getProfile);
+router.put('/profile', authenticate, updateProfile);
 
-// Authenticated routes (requires JWT)
-router.get('/profile', authMiddleware.authenticate, authController.getProfile); // Get profile
-router.put('/profile', authMiddleware.authenticate, authController.updateProfile); // Update profile
+// MFA routes
+router.post('/mfa/setup', authenticate, setupMFA);
+router.post('/mfa/verify', authenticate, verifyMFA);
+router.post('/mfa/verify-login', verifyMFALogin);
+router.post('/mfa/disable', authenticate, disableMFA);
+
+router.post('/logout', (req, res) => {
+  res.status(200).json({ message: 'Logged out successfully' });
+});
+
+router.post('/forgot-password', require('../controllers/forgotPasswordController'));
 
 module.exports = router;

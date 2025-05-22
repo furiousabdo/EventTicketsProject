@@ -1,11 +1,12 @@
-import { Schema, model } from "mongoose";
+// models/Booking.js
+const mongoose = require('mongoose');
 
-const bookingSchema = new Schema({
-  user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  event: { type: Schema.Types.ObjectId, ref: "Event", required: true },
-  ticketsBooked: { type: Number, required: true },
+const bookingSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  event: { type: mongoose.Schema.Types.ObjectId, ref: 'Event', required: true },
+  quantity: { type: Number, required: true },
   totalPrice: { type: Number, required: true },
-  status: { type: String, enum: ["pending", "confirmed", "canceled"], default: "pending" },
+  status: { type: String, enum: ['confirmed', 'cancelled'], default: 'confirmed' }
 }, { timestamps: true });
 
-export default model("Booking", bookingSchema);
+module.exports = mongoose.model('Booking', bookingSchema);
