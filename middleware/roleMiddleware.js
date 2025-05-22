@@ -16,7 +16,7 @@ module.exports.isOrganizer = (req, res, next) => {
 
 // User role middleware
 module.exports.isUser = (req, res, next) => {
-    if (req.user && req.user.role !== 'Standard User') {
+    if (req.user && req.user.role !== 'user') {
         return res.status(403).json({ message: 'User access required' });
     }
     next();

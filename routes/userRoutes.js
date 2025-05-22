@@ -6,6 +6,11 @@ const roleMiddleware = require('../middleware/roleMiddleware'); // Assuming you 
 
 const router = express.Router();
 
+// Authenticated user routes (must come before dynamic :id routes)
+router.get('/profile', authMiddleware.authenticate, userController.getProfile); // Current user profile
+router.put('/profile', authMiddleware.authenticate, userController.updateProfile);
+router.put('/change-password', authMiddleware.authenticate, userController.changePassword);
+
 // Admin routes
 router.get('/', roleMiddleware.isAdmin, userController.getAllUsers);
 router.get('/:id', roleMiddleware.isAdmin, userController.getUserById);
@@ -15,8 +20,6 @@ router.delete('/:id', roleMiddleware.isAdmin, userController.deleteUser);
 // Authenticated user routes
 //router.post('/api/v1/register', userController.register); // For user registration
 //router.post('/api/v1/login', userController.login); // For user login
-router.get('/users/profile', authMiddleware.authenticate, userController.getProfile); // Current user profile
-router.put('/users/profile', authMiddleware.authenticate, userController.updateProfile); // Update profile
 
 module.exports = router;
 
