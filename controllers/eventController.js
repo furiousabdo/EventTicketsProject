@@ -147,3 +147,4 @@ exports.getMyEvents = asyncHandler(async (req, res) => {
   }));
   res.json(fixedEvents);
 });
+>>>>>>>>> Temporary merge branch 2
