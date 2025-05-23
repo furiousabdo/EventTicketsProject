@@ -5,9 +5,15 @@ const asyncHandler = require('express-async-handler');
 
 // Create event
 exports.createEvent = asyncHandler(async (req, res) => {
-  const { title, description, date, location, price, ticketsAvailable } = req.body;
+  const { title, description, date, location, price, totalTickets } = req.body;
   const event = await Event.create({
-    title, description, date, location, price, ticketsAvailable,
+    title,
+    description,
+    date,
+    location,
+    price,
+    totalTickets: Number(totalTickets),
+    ticketsAvailable: Number(totalTickets),
     organizer: req.user._id
   });
   res.status(201).json(event);
@@ -21,7 +27,7 @@ exports.getEvents = asyncHandler(async (req, res) => {
 
 // Get all events (admin)
 exports.getAllEvents = asyncHandler(async (req, res) => {
-  const events = await Event.find();
+  const events = await Event.find().populate('organizer', 'name email');
   res.json(events);
 });
 
@@ -45,6 +51,10 @@ exports.updateEvent = asyncHandler(async (req, res) => {
   if (req.user.role === 'Organizer' && !event.organizer.equals(req.user._id)) {
     res.status(403);
     throw new Error('Not authorized to update this event');
+  }
+  // Only update totalTickets if provided
+  if (req.body.totalTickets !== undefined) {
+    event.totalTickets = req.body.totalTickets;
   }
   Object.assign(event, req.body);
   const updated = await event.save();
@@ -80,4 +90,60 @@ exports.getMyEventsAnalytics = asyncHandler(async (req, res) => {
     };
   }));
   res.json(analytics);
+});
+
+exports.getEventAnalytics = asyncHandler(async (req, res) => {
+  const eventId = req.params.id;
+  const event = await Event.findById(eventId);
+  if (!event) {
+    return res.status(404).json({ message: 'Event not found' });
+  }
+  const bookings = await Booking.find({ event: eventId });
+  const confirmed = bookings.filter(b => b.status === 'confirmed').reduce((sum, b) => sum + b.quantity, 0);
+  const cancelled = bookings.filter(b => b.status === 'cancelled').reduce((sum, b) => sum + b.quantity, 0);
+  const available = event.ticketsAvailable;
+  const totalBookings = bookings.length;
+  const totalRevenue = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
+  const statusDistribution = [
+    { status: 'Confirmed', value: confirmed },
+    { status: 'Cancelled', value: cancelled },
+    { status: 'Available', value: available }
+  ];
+  // Revenue by day (for the bar chart)
+  const revenueByDayMap = {};
+  bookings.forEach(b => {
+    const date = b.createdAt.toISOString().split('T')[0];
+    revenueByDayMap[date] = (revenueByDayMap[date] || 0) + b.totalPrice;
+  });
+  const revenueByDay = Object.entries(revenueByDayMap).map(([date, revenue]) => ({ date, revenue }));
+  // Average tickets per booking
+  const avgTicketsPerBooking = bookings.length > 0 ? (bookings.reduce((sum, b) => sum + b.quantity, 0) / bookings.length).toFixed(2) : 0;
+  // Conversion rate (tickets booked / total tickets)
+  const ticketsBooked = confirmed + cancelled;
+  const conversionRate = event.totalTickets > 0 ? ((ticketsBooked / event.totalTickets) * 100).toFixed(2) : 0;
+  // Days until event
+  const daysUntilEvent = event.date ? Math.max(0, Math.ceil((new Date(event.date) - new Date()) / (1000 * 60 * 60 * 24))) : 'N/A';
+  res.json({
+    totalBookings,
+    totalRevenue,
+    statusDistribution,
+    revenueByDay,
+    avgTicketsPerBooking,
+    conversionRate,
+    daysUntilEvent,
+    totalTickets: event.totalTickets,
+    ticketsAvailable: event.ticketsAvailable
+  });
+});
+
+// Get events for the current organizer
+exports.getMyEvents = asyncHandler(async (req, res) => {
+  const events = await Event.find({ organizer: req.user._id });
+  // Ensure totalTickets and ticketsAvailable are always numbers
+  const fixedEvents = events.map(ev => ({
+    ...ev.toObject(),
+    totalTickets: Number(ev.totalTickets) || 0,
+    ticketsAvailable: Number(ev.ticketsAvailable) || 0,
+  }));
+  res.json(fixedEvents);
 });

@@ -1,12 +1,15 @@
 const express = require('express');
 const router = express.Router();
 const {
-  register,
-  login,
-  forgetPassword,
-  resetPassword,
-  getProfile,
-  updateProfile,
+    register,
+    login,
+    forgetPassword,
+    getProfile,
+    updateProfile,
+    setupMFA,
+    verifyMFA,
+    verifyMFALogin,
+    disableMFA
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware'); // if you have auth middleware
 
@@ -14,10 +17,19 @@ const { protect } = require('../middleware/authMiddleware'); // if you have auth
 router.post('/register', register);
 router.post('/login', login);
 router.put('/forgetPassword', forgetPassword);
-router.post('/resetPassword', resetPassword);
+router.get('/me', authenticate, getProfile);
+router.put('/profile', authenticate, updateProfile);
 
-// Protected routes
-router.get('/profile', protect, getProfile);
-router.put('/profile', protect, updateProfile);
+// MFA routes
+router.post('/mfa/setup', authenticate, setupMFA);
+router.post('/mfa/verify', authenticate, verifyMFA);
+router.post('/mfa/verify-login', verifyMFALogin);
+router.post('/mfa/disable', authenticate, disableMFA);
+
+router.post('/logout', (req, res) => {
+  res.status(200).json({ message: 'Logged out successfully' });
+});
+
+router.post('/forgot-password', require('../controllers/forgotPasswordController'));
 
 module.exports = router;

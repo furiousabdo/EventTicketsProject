@@ -22,7 +22,8 @@ exports.bookTickets = asyncHandler(async (req, res) => {
     user: req.user._id,
     event: eventId,
     quantity,
-    totalPrice
+    totalPrice,
+    status: 'confirmed'
   });
   res.status(201).json(booking);
 });
@@ -55,6 +56,21 @@ exports.cancelBooking = asyncHandler(async (req, res) => {
   const event = await Event.findById(booking.event);
   event.ticketsAvailable += booking.quantity;
   await event.save();
-  await booking.remove();
+  booking.status = 'cancelled';
+  await booking.save();
   res.json({ message: 'Booking cancelled' });
 });
+
+// Get all bookings for the current user
+exports.getMyBookings = asyncHandler(async (req, res) => {
+  const bookings = await Booking.find({ user: req.user._id }).populate('event');
+  res.json(bookings);
+});
+
+// Properly export all functions for destructuring
+module.exports = {
+  bookTickets: exports.bookTickets,
+  getMyBookings: exports.getMyBookings,
+  getBookingById: exports.getBookingById,
+  cancelBooking: exports.cancelBooking
+};

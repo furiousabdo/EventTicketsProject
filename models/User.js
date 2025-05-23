@@ -4,13 +4,27 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, unique: true },
-  password : { type: String, required: true },
-  role: { type: String, enum: ['user', 'organizer', 'admin'], default: 'user' },
-    otp : { type: String },
-    otpExpire : { type: Date },
-},{ timestamps: true });
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: {
+        type: String,
+        enum: ['user', 'organizer', 'admin'],
+        default: 'user'
+    },
+    mfaEnabled: {
+        type: Boolean,
+        default: false
+    },
+    mfaSecret: {
+        type: String,
+        select: false
+    },
+    mfaTempSecret: {
+        type: String,
+        select: false
+    }
+}, { timestamps: true });
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
