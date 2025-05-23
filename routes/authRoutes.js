@@ -1,5 +1,5 @@
-// routes/authRoutes.js
 const express = require('express');
+const router = express.Router();
 const {
     register,
     login,
@@ -11,9 +11,9 @@ const {
     verifyMFALogin,
     disableMFA
 } = require('../controllers/authController');
-const { authenticate, authorizeRoles } = require('../middleware/authMiddleware');
-const router = express.Router();
+const { protect } = require('../middleware/authMiddleware'); // if you have auth middleware
 
+// Public routes
 router.post('/register', register);
 router.post('/login', login);
 router.put('/forgetPassword', forgetPassword);
