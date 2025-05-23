@@ -8,8 +8,20 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: {
         type: String,
-        enum: ['Standard User', 'Organizer', 'Admin'],
-        default: 'Standard User'
+        enum: ['user', 'organizer', 'admin'],
+        default: 'user'
+    },
+    mfaEnabled: {
+        type: Boolean,
+        default: false
+    },
+    mfaSecret: {
+        type: String,
+        select: false
+    },
+    mfaTempSecret: {
+        type: String,
+        select: false
     }
 }, { timestamps: true });
 
