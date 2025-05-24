@@ -35,11 +35,22 @@ const BookTicketForm = ({ event, onBookingSuccess }) => {
     setError('');
     setSuccess('');
     try {
-      await bookingsAPI.createBooking(event._id, { quantity });
+      // Ensure quantity is a number
+      const numQuantity = Number(quantity);
+      if (isNaN(numQuantity) || numQuantity < 1) {
+        throw new Error('Please enter a valid quantity');
+      }
+      if (numQuantity > available) {
+        throw new Error('Not enough tickets available');
+      }
+
+      const response = await bookingsAPI.createBooking(event._id, { quantity: numQuantity });
+      console.log('Booking response:', response); // Debug log
       setSuccess('Booking successful!');
       if (onBookingSuccess) onBookingSuccess();
     } catch (err) {
-      setError(err.response?.data?.message || 'Booking failed');
+      console.error('Booking error:', err); // Debug log
+      setError(err.response?.data?.message || err.message || 'Booking failed');
     } finally {
       setLoading(false);
       setConfirmOpen(false);

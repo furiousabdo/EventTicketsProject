@@ -32,7 +32,7 @@ const EventCard = ({ event }) => {
           {event.location}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          Price: ${event.price} | Tickets: {event.availableTickets}
+          Price: ${event.price} | Available Tickets: {event.ticketsAvailable} / {event.totalTickets}
         </Typography>
       </CardContent>
       <Box sx={{ p: 2 }}>
