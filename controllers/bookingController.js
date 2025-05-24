@@ -2,30 +2,81 @@
 const Booking = require('../models/Booking');
 const Event = require('../models/Event');
 const asyncHandler = require('express-async-handler');
+const mongoose = require('mongoose');
 
 // Book tickets
 exports.bookTickets = asyncHandler(async (req, res) => {
   const { eventId, quantity } = req.body;
-  const event = await Event.findById(eventId);
-  if (!event) {
-    res.status(404);
-    throw new Error('Event not found');
-  }
-  if (event.ticketsAvailable < quantity) {
+
+  // Validate input
+  if (!eventId || !quantity) {
     res.status(400);
-    throw new Error('Not enough tickets available');
+    throw new Error('Event ID and quantity are required');
   }
-  event.ticketsAvailable -= quantity;
-  await event.save();
-  const totalPrice = quantity * event.price;
-  const booking = await Booking.create({
-    user: req.user._id,
-    event: eventId,
-    quantity,
-    totalPrice,
-    status: 'confirmed'
-  });
-  res.status(201).json(booking);
+
+  // Convert quantity to number and validate
+  const numQuantity = Number(quantity);
+  if (isNaN(numQuantity) || numQuantity < 1) {
+    res.status(400);
+    throw new Error('Invalid quantity');
+  }
+
+  try {
+    // Find the event and check availability
+    const event = await Event.findById(eventId);
+    if (!event) {
+      res.status(404);
+      throw new Error('Event not found');
+    }
+
+    // Check if enough tickets are available
+    if (event.ticketsAvailable < numQuantity) {
+      res.status(400);
+      throw new Error('Not enough tickets available');
+    }
+
+    // Calculate total price
+    const totalPrice = numQuantity * event.price;
+
+    // Create the booking
+    const booking = await Booking.create({
+      user: req.user._id,
+      event: eventId,
+      quantity: numQuantity,
+      totalPrice,
+      status: 'confirmed'
+    });
+
+    // Update available tickets using findOneAndUpdate to ensure atomicity
+    const updatedEvent = await Event.findOneAndUpdate(
+      { 
+        _id: eventId, 
+        ticketsAvailable: { $gte: numQuantity } 
+      },
+      { 
+        $inc: { ticketsAvailable: -numQuantity } 
+      },
+      { 
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!updatedEvent) {
+      // If update fails, delete the booking and throw error
+      await Booking.findByIdAndDelete(booking._id);
+      res.status(400);
+      throw new Error('Failed to update ticket availability');
+    }
+
+    // Return the booking with event details
+    const populatedBooking = await Booking.findById(booking._id).populate('event');
+    res.status(201).json(populatedBooking);
+
+  } catch (error) {
+    res.status(res.statusCode === 200 ? 400 : res.statusCode);
+    throw new Error(error.message || 'Failed to create booking');
+  }
 });
 
 // Get booking by ID
@@ -53,12 +104,42 @@ exports.cancelBooking = asyncHandler(async (req, res) => {
     res.status(403);
     throw new Error('Not authorized to cancel this booking');
   }
-  const event = await Event.findById(booking.event);
-  event.ticketsAvailable += booking.quantity;
-  await event.save();
-  booking.status = 'cancelled';
-  await booking.save();
-  res.json({ message: 'Booking cancelled' });
+
+  try {
+    // Update event tickets atomically
+    const updatedEvent = await Event.findOneAndUpdate(
+      { _id: booking.event },
+      { $inc: { ticketsAvailable: booking.quantity } },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedEvent) {
+      res.status(400);
+      throw new Error('Failed to update event tickets');
+    }
+
+    // Update booking status atomically
+    const updatedBooking = await Booking.findOneAndUpdate(
+      { _id: booking._id },
+      { status: 'cancelled' },
+      { new: true }
+    );
+
+    if (!updatedBooking) {
+      // Rollback the event update if booking update fails
+      await Event.findOneAndUpdate(
+        { _id: booking.event },
+        { $inc: { ticketsAvailable: -booking.quantity } }
+      );
+      res.status(400);
+      throw new Error('Failed to cancel booking');
+    }
+
+    res.json({ message: 'Booking cancelled' });
+  } catch (error) {
+    res.status(res.statusCode === 200 ? 400 : res.statusCode);
+    throw new Error(error.message || 'Failed to cancel booking');
+  }
 });
 
 // Get all bookings for the current user

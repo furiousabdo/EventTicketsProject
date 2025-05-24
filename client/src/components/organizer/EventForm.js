@@ -59,23 +59,35 @@ const EventForm = () => {
     setLoading(true);
     setError('');
     setSuccess('');
-    const formData = new FormData();
-    formData.append('title', form.title);
-    formData.append('description', form.description);
-    formData.append('date', form.date);
-    formData.append('location', form.location);
-    formData.append('price', form.price);
-    formData.append('totalTickets', Number(form.totalTickets));
-    formData.append('ticketsAvailable', Number(form.totalTickets));
-    if (image) {
-      formData.append('image', image);
+    
+    // Validate totalTickets
+    const totalTicketsNum = Number(form.totalTickets);
+    if (!form.totalTickets || isNaN(totalTicketsNum) || totalTicketsNum < 0) {
+      setError('Total tickets must be a valid positive number');
+      setLoading(false);
+      return;
     }
+    
+    const eventData = {
+      title: form.title,
+      description: form.description,
+      date: form.date,
+      location: form.location,
+      price: Number(form.price),
+      totalTickets: totalTicketsNum,
+      imageUrl: form.imageUrl
+    };
+
+    console.log('Submitting event data:', eventData);  // Debug log
+
     try {
       if (id) {
-        await eventsAPI.updateEvent(id, formData);
+        const response = await eventsAPI.updateEvent(id, eventData);
+        console.log('Update response:', response);  // Debug log
         setSuccess('Event updated successfully!');
       } else {
-        await eventsAPI.createEvent(formData);
+        const response = await eventsAPI.createEvent(eventData);
+        console.log('Create response:', response);  // Debug log
         setSuccess('Event created successfully!');
         setForm({
           title: '', description: '', date: '', location: '', price: '', totalTickets: '', imageUrl: ''
@@ -85,6 +97,7 @@ const EventForm = () => {
       }
       setTimeout(() => navigate('/organizer/events'), 1200);
     } catch (err) {
+      console.error('Error submitting form:', err);  // Debug log
       setError(err.response?.data?.message || 'Failed to save event');
     } finally {
       setLoading(false);

@@ -6,16 +6,25 @@ const asyncHandler = require('express-async-handler');
 // Create event
 exports.createEvent = asyncHandler(async (req, res) => {
   const { title, description, date, location, price, totalTickets } = req.body;
+  
+  if (!totalTickets || isNaN(Number(totalTickets)) || Number(totalTickets) < 0) {
+    res.status(400);
+    throw new Error('Total tickets must be a valid positive number');
+  }
+
+  const parsedTotalTickets = Number(totalTickets);
+  
   const event = await Event.create({
     title,
     description,
     date,
     location,
-    price,
-    totalTickets: Number(totalTickets),
-    ticketsAvailable: Number(totalTickets),
+    price: Number(price),
+    totalTickets: parsedTotalTickets,
+    ticketsAvailable: parsedTotalTickets, // Initially set to same as totalTickets
     organizer: req.user._id
   });
+
   res.status(201).json(event);
 });
 

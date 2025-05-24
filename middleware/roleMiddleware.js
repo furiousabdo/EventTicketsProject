@@ -14,10 +14,10 @@ module.exports.isOrganizer = (req, res, next) => {
     next();
 };
 
-// User role middleware
+// User role middleware - allows any authenticated user (user, organizer, or admin)
 module.exports.isUser = (req, res, next) => {
-    if (req.user && req.user.role !== 'user') {
-        return res.status(403).json({ message: 'User access required' });
+    if (!req.user) {
+        return res.status(401).json({ message: 'Authentication required' });
     }
     next();
 };

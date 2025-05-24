@@ -11,8 +11,9 @@ const {
     verifyMFALogin,
     disableMFA
 } = require('../controllers/authController');
-const { protect } = require('../middleware/authMiddleware'); // if you have auth middleware
-
+const { protect } = require('../middleware/authMiddleware');
+const { authenticate } = require('../middleware/authMiddleware');
+const { isAdmin } = require('../middleware/roleMiddleware');
 // Public routes
 router.post('/register', register);
 router.post('/login', login);
