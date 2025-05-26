@@ -21,6 +21,22 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message
+    });
     return Promise.reject(error);
   }
 );
@@ -28,16 +44,16 @@ api.interceptors.request.use(
 // Auth API
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
-  register: (name, email, password, role) => 
-    api.post('/auth/register', { name, email, password, role }),
+  register: (name, email, password, role, organizerKey) => 
+    api.post('/auth/register', { name, email, password, role, organizerKey }),
   forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
-  resetPassword: (token, password) => 
-    api.post('/auth/reset-password', { token, password }),
+  resetPassword: (email, otp, newPassword) => 
+    api.post('/auth/reset-password', { email, otp, newPassword }),
   getCurrentUser: () => api.get('/auth/me'),
   logout: () => api.post('/auth/logout'),
   setupMFA: () => api.post('/auth/mfa/setup'),
   verifyMFA: (code) => api.post('/auth/mfa/verify', { code }),
-  verifyMFALogin: (code) => api.post('/auth/mfa/verify-login', { code }),
+  verifyMFALogin: (code, tempToken) => api.post('/auth/mfa/verify-login', { code, tempToken }),
   disableMFA: () => api.post('/auth/mfa/disable')
 };
 
@@ -58,14 +74,17 @@ export const bookingsAPI = {
     api.post('/bookings', { eventId, ...ticketData }),
   getMyBookings: () => api.get('/bookings/my-bookings'),
   getBooking: (id) => api.get(`/bookings/${id}`),
-  cancelBooking: (id) => api.post(`/bookings/${id}/cancel`)
+  cancelBooking: (id) => api.post(`/bookings/${id}/cancel`),
+  deleteBooking: (id) => api.delete(`/bookings/${id}`)
 };
 
 // User API
 export const userAPI = {
-  updateProfile: (userData) => api.put('/users/profile', userData),
+  getProfile: () => api.get('/users/profile'),
+  updateProfile: (data) => api.put('/users/profile', data),
   changePassword: (currentPassword, newPassword) => 
-    api.put('/users/change-password', { currentPassword, newPassword })
+    api.put('/users/change-password', { currentPassword, newPassword }),
+  // ... any other user endpoints ...
 };
 
 // Admin API

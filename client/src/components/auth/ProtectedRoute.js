@@ -1,25 +1,22 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import UnauthorizedPage from './UnauthorizedPage';
 
-const ProtectedRoute = ({ children, roles = [] }) => {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-
-  if (loading) {
-    return null; // or a loading spinner
-  }
+const ProtectedRoute = ({ children, roles }) => {
+  const { user } = useAuth();
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Not logged in, redirect to login page
+    return <Navigate to="/login" replace />;
   }
 
-  if (roles.length > 0 && !roles.includes(user.role)) {
-    return <UnauthorizedPage />;
+  if (roles && !roles.includes(user.role)) {
+    // User's role is not authorized, redirect to home page
+    return <Navigate to="/" replace />;
   }
 
+  // Authorized, render component
   return children;
 };
 
-export default ProtectedRoute;
+export default ProtectedRoute;

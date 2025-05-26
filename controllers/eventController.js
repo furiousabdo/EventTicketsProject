@@ -5,6 +5,12 @@ const asyncHandler = require('express-async-handler');
 
 // Create event
 exports.createEvent = asyncHandler(async (req, res) => {
+  // Check if user is admin
+  if (req.user.role === 'admin') {
+    res.status(403);
+    throw new Error('Admins are not allowed to create events');
+  }
+
   const { title, description, date, location, price, totalTickets } = req.body;
   
   if (!totalTickets || isNaN(Number(totalTickets)) || Number(totalTickets) < 0) {
@@ -21,7 +27,7 @@ exports.createEvent = asyncHandler(async (req, res) => {
     location,
     price: Number(price),
     totalTickets: parsedTotalTickets,
-    ticketsAvailable: parsedTotalTickets, // Initially set to same as totalTickets
+    ticketsAvailable: parsedTotalTickets,
     organizer: req.user._id
   });
 
@@ -77,10 +83,14 @@ exports.deleteEvent = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Event not found');
   }
-  if (req.user.role === 'Organizer' && !event.organizer.equals(req.user._id)) {
+
+  // Check permissions
+  if (req.user.role === 'organizer' && !event.organizer.equals(req.user._id)) {
     res.status(403);
-    throw new Error('Not authorized to delete this event');
+    throw new Error('Organizers can only delete their own events');
   }
+
+  // Admin can delete any event
   await event.deleteOne();
   res.json({ message: 'Event removed' });
 });

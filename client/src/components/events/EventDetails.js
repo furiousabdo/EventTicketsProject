@@ -7,6 +7,25 @@ import ShareIcon from '@mui/icons-material/Share';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 
+const buttonStyle = {
+  background: 'linear-gradient(45deg, #6a1b9a 30%, #9c27b0 90%)',
+  border: 0,
+  borderRadius: '25px',
+  boxShadow: '0 3px 5px 2px rgba(106, 27, 154, 0.3)',
+  color: 'white',
+  height: 48,
+  padding: '0 30px',
+  textTransform: 'none',
+  fontSize: '1rem',
+  fontWeight: 500,
+  transition: 'all 0.3s ease-in-out',
+  '&:hover': {
+    background: 'linear-gradient(45deg, #9c27b0 30%, #6a1b9a 90%)',
+    transform: 'scale(1.02)',
+    boxShadow: '0 4px 10px 2px rgba(106, 27, 154, 0.4)',
+  }
+};
+
 const EventDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -51,17 +70,34 @@ const EventDetails = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Paper sx={{ p: 3 }}>
+      <Paper sx={{ 
+        p: 3,
+        background: 'rgba(255, 255, 255, 0.8)',
+        backdropFilter: 'blur(10px)',
+        borderRadius: '15px',
+        boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+      }}>
         <Grid container spacing={3}>
           <Grid item xs={12} md={6}>
             <img
               src={event.imageUrl || 'https://source.unsplash.com/featured/?concert,event'}
               alt={event.title}
-              style={{ width: '100%', borderRadius: 8 }}
+              style={{ width: '100%', borderRadius: '15px' }}
             />
           </Grid>
           <Grid item xs={12} md={6}>
-            <Typography variant="h4" gutterBottom>{event.title}</Typography>
+            <Typography 
+              variant="h4" 
+              gutterBottom
+              sx={{
+                background: 'linear-gradient(45deg, #6a1b9a 30%, #9c27b0 90%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 'bold'
+              }}
+            >
+              {event.title}
+            </Typography>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
               <Chip
                 label={event.status}
@@ -82,10 +118,27 @@ const EventDetails = () => {
             <Typography variant="body2">Price: ${event.price}</Typography>
             <Typography variant="body2">Available Tickets: {event.availableTickets}</Typography>
             <Box sx={{ mt: 2 }}>
-              {event.status === 'approved' && <BookTicketForm event={event} />}
+              {event.status === 'approved' && <BookTicketForm event={event} buttonStyle={buttonStyle} />}
             </Box>
             <Box sx={{ mt: 2 }}>
-              <Button variant="outlined" onClick={() => navigate('/events')}>Back to Events</Button>
+              <Button 
+                variant="outlined" 
+                onClick={() => navigate('/events')}
+                sx={{
+                  ...buttonStyle,
+                  background: 'transparent',
+                  border: '2px solid #6a1b9a',
+                  color: '#6a1b9a',
+                  '&:hover': {
+                    background: 'transparent',
+                    borderColor: '#9c27b0',
+                    color: '#9c27b0',
+                    transform: 'scale(1.02)',
+                  }
+                }}
+              >
+                Back to Events
+              </Button>
             </Box>
           </Grid>
         </Grid>
