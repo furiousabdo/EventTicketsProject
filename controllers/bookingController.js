@@ -86,21 +86,34 @@ exports.getBookingById = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Booking not found');
   }
-  if (!booking.user.equals(req.user._id)) {
+
+  // Allow access if user is the booking owner, an admin, or the event organizer
+  const isOwner = booking.user.equals(req.user._id);
+  const isAdmin = req.user.role === 'admin';
+  const isOrganizer = req.user.role === 'organizer' && booking.event.organizer.equals(req.user._id);
+
+  if (!isOwner && !isAdmin && !isOrganizer) {
     res.status(403);
     throw new Error('Not authorized to view this booking');
   }
+
   res.json(booking);
 });
 
 // Cancel booking
 exports.cancelBooking = asyncHandler(async (req, res) => {
-  const booking = await Booking.findById(req.params.id);
+  const booking = await Booking.findById(req.params.id).populate('event');
   if (!booking) {
     res.status(404);
     throw new Error('Booking not found');
   }
-  if (!booking.user.equals(req.user._id)) {
+
+  // Allow cancellation if user is the booking owner, an admin, or the event organizer
+  const isOwner = booking.user.equals(req.user._id);
+  const isAdmin = req.user.role === 'admin';
+  const isOrganizer = req.user.role === 'organizer' && booking.event.organizer.equals(req.user._id);
+
+  if (!isOwner && !isAdmin && !isOrganizer) {
     res.status(403);
     throw new Error('Not authorized to cancel this booking');
   }
@@ -108,7 +121,7 @@ exports.cancelBooking = asyncHandler(async (req, res) => {
   try {
     // Update event tickets atomically
     const updatedEvent = await Event.findOneAndUpdate(
-      { _id: booking.event },
+      { _id: booking.event._id },
       { $inc: { ticketsAvailable: booking.quantity } },
       { new: true, runValidators: true }
     );
@@ -128,18 +141,53 @@ exports.cancelBooking = asyncHandler(async (req, res) => {
     if (!updatedBooking) {
       // Rollback the event update if booking update fails
       await Event.findOneAndUpdate(
-        { _id: booking.event },
+        { _id: booking.event._id },
         { $inc: { ticketsAvailable: -booking.quantity } }
       );
       res.status(400);
       throw new Error('Failed to cancel booking');
     }
 
-    res.json({ message: 'Booking cancelled' });
+    res.json({ message: 'Booking cancelled successfully' });
   } catch (error) {
     res.status(res.statusCode === 200 ? 400 : res.statusCode);
     throw new Error(error.message || 'Failed to cancel booking');
   }
+});
+
+// Delete booking (Admin and Organizer only)
+exports.deleteBooking = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id).populate('event');
+  if (!booking) {
+    res.status(404);
+    throw new Error('Booking not found');
+  }
+
+  // Only allow admins and event organizers to delete bookings
+  const isAdmin = req.user.role === 'admin';
+  const isOrganizer = req.user.role === 'organizer' && booking.event.organizer.equals(req.user._id);
+
+  if (!isAdmin && !isOrganizer) {
+    res.status(403);
+    throw new Error('Not authorized to delete this booking');
+  }
+
+  // If the booking is confirmed, update the event tickets
+  if (booking.status === 'confirmed') {
+    const updatedEvent = await Event.findOneAndUpdate(
+      { _id: booking.event._id },
+      { $inc: { ticketsAvailable: booking.quantity } },
+      { new: true }
+    );
+
+    if (!updatedEvent) {
+      res.status(400);
+      throw new Error('Failed to update event tickets');
+    }
+  }
+
+  await booking.deleteOne();
+  res.json({ message: 'Booking deleted successfully' });
 });
 
 // Get all bookings for the current user
@@ -148,10 +196,11 @@ exports.getMyBookings = asyncHandler(async (req, res) => {
   res.json(bookings);
 });
 
-// Properly export all functions for destructuring
+// Properly export all functions
 module.exports = {
   bookTickets: exports.bookTickets,
   getMyBookings: exports.getMyBookings,
   getBookingById: exports.getBookingById,
-  cancelBooking: exports.cancelBooking
+  cancelBooking: exports.cancelBooking,
+  deleteBooking: exports.deleteBooking
 };

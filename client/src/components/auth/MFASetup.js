@@ -14,10 +14,11 @@ import {
   DialogActions
 } from '@mui/material';
 import QRCode from 'qrcode.react';
-import { authAPI } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 import { showToast } from '../../utils/toast';
 
 const MFASetup = ({ onComplete }) => {
+  const { setupMFA, verifyMFASetup } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [secret, setSecret] = useState('');
@@ -26,33 +27,35 @@ const MFASetup = ({ onComplete }) => {
   const [showVerification, setShowVerification] = useState(false);
 
   useEffect(() => {
-    setupMFA();
+    initSetupMFA();
   }, []);
 
-  const setupMFA = async () => {
+  const initSetupMFA = async () => {
     try {
       setLoading(true);
-      const response = await authAPI.setupMFA();
-      setSecret(response.data.secret);
-      setQrCode(response.data.qrCode);
+      const data = await setupMFA();
+      setSecret(data.secret);
+      setQrCode(data.qrCode);
     } catch (err) {
       setError('Failed to setup MFA');
-      showToast.error('Failed to setup MFA');
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerify = async () => {
+    if (verificationCode.length !== 6) {
+      setError('Please enter a 6-digit code');
+      return;
+    }
+
     try {
       setLoading(true);
-      await authAPI.verifyMFA(verificationCode);
-      showToast.success('MFA setup completed successfully');
+      await verifyMFASetup(verificationCode);
       setShowVerification(false);
       onComplete?.();
     } catch (err) {
       setError('Invalid verification code');
-      showToast.error('Invalid verification code');
     } finally {
       setLoading(false);
     }
@@ -83,16 +86,16 @@ const MFASetup = ({ onComplete }) => {
           <Typography variant="body1" paragraph>
             1. Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.)
           </Typography>
-          {qrCode && qrCode.startsWith('data:image') && (
+          {qrCode && (
             <Box sx={{ mb: 2 }}>
-              <QRCode value={qrCode} size={200} />
+              <img src={qrCode} alt="QR Code" style={{ width: 200, height: 200 }} />
             </Box>
           )}
-          {qrCode && !qrCode.startsWith('data:image') && (
-            <Alert severity="error">Invalid QR code data received from server.</Alert>
-          )}
+          <Typography variant="body2" color="textSecondary" paragraph>
+            Or manually enter this code in your authenticator app: {secret}
+          </Typography>
           <Typography variant="body1" paragraph>
-            2. Enter the 6-digit code from your authenticator app
+            2. Enter the 6-digit code from your authenticator app to verify setup
           </Typography>
           <Button
             variant="contained"
@@ -113,7 +116,7 @@ const MFASetup = ({ onComplete }) => {
               type="text"
               fullWidth
               value={verificationCode}
-              onChange={(e) => setVerificationCode(e.target.value)}
+              onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
               inputProps={{ maxLength: 6 }}
             />
           </DialogContent>

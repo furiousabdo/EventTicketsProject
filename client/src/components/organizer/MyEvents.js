@@ -4,6 +4,7 @@ import { eventsAPI } from '../../utils/api';
 import { Container, Typography, Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, CircularProgress, Alert, Chip } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const MyEvents = () => {
   const navigate = useNavigate();
@@ -33,6 +34,19 @@ const MyEvents = () => {
 
   const handleAnalytics = (id) => {
     navigate(`/organizer/events/${id}/analytics`);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await eventsAPI.deleteEvent(id);
+      setEvents((prev) => prev.filter(e => e._id !== id));
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete event');
+    }
   };
 
   return (
@@ -68,11 +82,46 @@ const MyEvents = () => {
                   <TableCell>${event.price}</TableCell>
                   <TableCell>{Number(event.ticketsAvailable) || 0} / {Number(event.totalTickets) || 0}</TableCell>
                   <TableCell>
-                    <Chip label={event.status} color={event.status === 'approved' ? 'success' : event.status === 'pending' ? 'warning' : 'error'} />
+                    <Chip 
+                      label={event.status} 
+                      color={event.status === 'approved' ? 'success' : event.status === 'pending' ? 'warning' : 'error'}
+                      sx={{
+                        background: event.status === 'approved' 
+                          ? 'linear-gradient(45deg, #2e7d32 30%, #4caf50 90%)'
+                          : event.status === 'pending'
+                          ? 'linear-gradient(45deg, #ed6c02 30%, #ff9800 90%)'
+                          : 'linear-gradient(45deg, #d32f2f 30%, #f44336 90%)',
+                        color: 'white'
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
-                    <Button size="small" startIcon={<EditIcon />} onClick={() => handleEdit(event._id)} sx={{ mr: 1 }}>Edit</Button>
-                    <Button size="small" startIcon={<BarChartIcon />} onClick={() => handleAnalytics(event._id)} color="secondary">Analytics</Button>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <Button 
+                        size="small" 
+                        startIcon={<EditIcon />} 
+                        onClick={() => handleEdit(event._id)} 
+                        sx={{ mr: 1 }}
+                      >
+                        Edit
+                      </Button>
+                      <Button 
+                        size="small" 
+                        startIcon={<BarChartIcon />} 
+                        onClick={() => handleAnalytics(event._id)} 
+                        color="secondary"
+                      >
+                        Analytics
+                      </Button>
+                      <Button
+                        size="small"
+                        startIcon={<DeleteIcon />}
+                        onClick={() => handleDelete(event._id)}
+                        color="error"
+                      >
+                        Delete
+                      </Button>
+                    </Box>
                   </TableCell>
                 </TableRow>
               ))}

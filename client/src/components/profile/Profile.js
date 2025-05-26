@@ -19,6 +19,25 @@ import { userAPI } from '../../utils/api';
 import { showToast } from '../../utils/toast';
 import MFASetup from '../auth/MFASetup';
 
+const buttonStyle = {
+  background: 'linear-gradient(45deg, #6a1b9a 30%, #9c27b0 90%)',
+  border: 0,
+  borderRadius: '25px',
+  boxShadow: '0 3px 5px 2px rgba(106, 27, 154, 0.3)',
+  color: 'white',
+  height: 48,
+  padding: '0 30px',
+  textTransform: 'none',
+  fontSize: '1rem',
+  fontWeight: 500,
+  transition: 'all 0.3s ease-in-out',
+  '&:hover': {
+    background: 'linear-gradient(45deg, #9c27b0 30%, #6a1b9a 90%)',
+    transform: 'scale(1.02)',
+    boxShadow: '0 4px 10px 2px rgba(106, 27, 154, 0.4)',
+  }
+};
+
 const Profile = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -114,12 +133,41 @@ const Profile = () => {
 
   return (
     <Container maxWidth="md" sx={{ mt: 4 }}>
-      <Typography variant="h5" gutterBottom>My Profile</Typography>
+      <Typography 
+        variant="h4" 
+        gutterBottom
+        sx={{
+          background: 'linear-gradient(45deg, #6a1b9a 30%, #9c27b0 90%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          mb: 3,
+          fontWeight: 'bold'
+        }}
+      >
+        My Profile
+      </Typography>
       
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>Profile Information</Typography>
+          <Paper sx={{ 
+            p: 3,
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '15px',
+            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+          }}>
+            <Typography 
+              variant="h6" 
+              gutterBottom
+              sx={{
+                background: 'linear-gradient(45deg, #6a1b9a 30%, #9c27b0 90%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 'bold'
+              }}
+            >
+              Profile Information
+            </Typography>
             
             {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
             {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
@@ -133,6 +181,18 @@ const Profile = () => {
                 onChange={handleProfileChange}
                 margin="normal"
                 required
+                sx={{ 
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    '&:hover fieldset': {
+                      borderColor: '#9c27b0',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#6a1b9a',
+                    }
+                  }
+                }}
               />
               <TextField
                 fullWidth
@@ -143,12 +203,24 @@ const Profile = () => {
                 onChange={handleProfileChange}
                 margin="normal"
                 required
+                sx={{ 
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    '&:hover fieldset': {
+                      borderColor: '#9c27b0',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#6a1b9a',
+                    }
+                  }
+                }}
               />
               <Button
                 type="submit"
                 variant="contained"
                 disabled={profileLoading}
-                sx={{ mt: 2 }}
+                sx={{ ...buttonStyle, mt: 2 }}
               >
                 {profileLoading ? <CircularProgress size={24} /> : 'Update Profile'}
               </Button>
@@ -157,8 +229,25 @@ const Profile = () => {
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Paper elevation={3} sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>Security</Typography>
+          <Paper sx={{ 
+            p: 3,
+            background: 'rgba(255, 255, 255, 0.8)',
+            backdropFilter: 'blur(10px)',
+            borderRadius: '15px',
+            boxShadow: '0 4px 30px rgba(0, 0, 0, 0.1)'
+          }}>
+            <Typography 
+              variant="h6" 
+              gutterBottom
+              sx={{
+                background: 'linear-gradient(45deg, #6a1b9a 30%, #9c27b0 90%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 'bold'
+              }}
+            >
+              Security
+            </Typography>
             
             {pwError && <Alert severity="error" sx={{ mb: 2 }}>{pwError}</Alert>}
             {pwSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pwSuccess}</Alert>}
@@ -173,6 +262,18 @@ const Profile = () => {
                 onChange={handlePasswordChange}
                 margin="normal"
                 required
+                sx={{ 
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    '&:hover fieldset': {
+                      borderColor: '#9c27b0',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#6a1b9a',
+                    }
+                  }
+                }}
               />
               <TextField
                 fullWidth
@@ -183,6 +284,18 @@ const Profile = () => {
                 onChange={handlePasswordChange}
                 margin="normal"
                 required
+                sx={{ 
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    '&:hover fieldset': {
+                      borderColor: '#9c27b0',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#6a1b9a',
+                    }
+                  }
+                }}
               />
               <TextField
                 fullWidth
@@ -193,12 +306,24 @@ const Profile = () => {
                 onChange={handlePasswordChange}
                 margin="normal"
                 required
+                sx={{ 
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'white',
+                    borderRadius: '8px',
+                    '&:hover fieldset': {
+                      borderColor: '#9c27b0',
+                    },
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#6a1b9a',
+                    }
+                  }
+                }}
               />
               <Button
                 type="submit"
                 variant="contained"
                 disabled={passwordLoading}
-                sx={{ mt: 2 }}
+                sx={{ ...buttonStyle, mt: 2 }}
               >
                 {passwordLoading ? <CircularProgress size={24} /> : 'Change Password'}
               </Button>
@@ -206,16 +331,36 @@ const Profile = () => {
 
             <Divider sx={{ my: 3 }} />
 
-            <Typography variant="subtitle1" gutterBottom>
+            <Typography 
+              variant="subtitle1" 
+              gutterBottom
+              sx={{
+                background: 'linear-gradient(45deg, #6a1b9a 30%, #9c27b0 90%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 'bold'
+              }}
+            >
               Two-Factor Authentication
             </Typography>
-            <Typography variant="body2" color="text.secondary" paragraph>
+            <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
               Add an extra layer of security to your account by enabling two-factor authentication.
             </Typography>
             <Button
               variant="outlined"
               onClick={handleMFASetup}
-              sx={{ mt: 1 }}
+              sx={{
+                ...buttonStyle,
+                background: 'transparent',
+                border: '2px solid #6a1b9a',
+                color: '#6a1b9a',
+                '&:hover': {
+                  background: 'transparent',
+                  borderColor: '#9c27b0',
+                  color: '#9c27b0',
+                  transform: 'scale(1.02)',
+                }
+              }}
             >
               Setup Two-Factor Authentication
             </Button>

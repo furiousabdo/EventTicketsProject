@@ -37,10 +37,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await authAPI.login(email, password);
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      setUser(user);
-      showToast.success('Login successful!');
+      if (!response.data.requiresMFA) {
+        localStorage.setItem('token', response.data.token);
+        setUser(response.data.user);
+        showToast.success('Login successful!');
+      }
       return response;
     } catch (error) {
       showToast.error(error.response?.data?.message || 'Login failed');
@@ -48,9 +49,51 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password, role) => {
+  const verifyMFA = async (tempToken, code) => {
     try {
-      const response = await authAPI.register(name, email, password, role);
+      const response = await authAPI.verifyMFALogin(code, tempToken);
+      localStorage.setItem('token', response.data.token);
+      setUser(response.data);
+      showToast.success('2FA verification successful!');
+    } catch (error) {
+      showToast.error(error.response?.data?.message || '2FA verification failed');
+      throw error;
+    }
+  };
+
+  const setupMFA = async () => {
+    try {
+      const response = await authAPI.setupMFA();
+      return response.data;
+    } catch (error) {
+      showToast.error(error.response?.data?.message || 'Failed to setup 2FA');
+      throw error;
+    }
+  };
+
+  const verifyMFASetup = async (code) => {
+    try {
+      await authAPI.verifyMFA(code);
+      showToast.success('2FA setup completed successfully');
+    } catch (error) {
+      showToast.error(error.response?.data?.message || 'Failed to verify 2FA setup');
+      throw error;
+    }
+  };
+
+  const disableMFA = async () => {
+    try {
+      await authAPI.disableMFA();
+      showToast.success('2FA disabled successfully');
+    } catch (error) {
+      showToast.error(error.response?.data?.message || 'Failed to disable 2FA');
+      throw error;
+    }
+  };
+
+  const register = async (name, email, password, role, organizerKey) => {
+    try {
+      const response = await authAPI.register(name, email, password, role, organizerKey);
       showToast.success('Registration successful! Please login.');
       return response;
     } catch (error) {
@@ -72,18 +115,21 @@ export const AuthProvider = ({ children }) => {
 
   const forgotPassword = async (email) => {
     try {
+      console.log('Sending password reset request for:', email);
       const response = await authAPI.forgotPassword(email);
-      showToast.success('Password reset email sent');
+      showToast.success('OTP sent to your email');
       return response;
     } catch (error) {
-      showToast.error(error.response?.data?.message || 'Failed to send reset email');
+      console.error('Password reset error:', error.response?.data || error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to send OTP';
+      showToast.error(errorMessage);
       throw error;
     }
   };
 
-  const resetPassword = async (token, password) => {
+  const resetPassword = async (email, otp, newPassword) => {
     try {
-      const response = await authAPI.resetPassword(token, password);
+      const response = await authAPI.resetPassword(email, otp, newPassword);
       showToast.success('Password reset successful');
       return response;
     } catch (error) {
@@ -99,7 +145,11 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    verifyMFA,
+    setupMFA,
+    verifyMFASetup,
+    disableMFA
   };
 
   return (

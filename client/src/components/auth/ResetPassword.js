@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { useNavigate, useParams, Link as RouterLink } from 'react-router-dom';
 import {
   Container,
   Paper,
@@ -11,59 +11,48 @@ import {
   Alert,
   CircularProgress,
   useTheme,
-  alpha
+  alpha,
 } from '@mui/material';
 import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
-import MFAVerification from './MFAVerification';
 
-const Login = () => {
+const ResetPassword = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { token } = useParams();
+  const { resetPassword } = useAuth();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    password: '',
+    confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [showMFA, setShowMFA] = useState(false);
-  const [tempToken, setTempToken] = useState('');
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
     setLoading(true);
     setError('');
 
     try {
-      const response = await login(formData.email, formData.password);
-      if (response.data.requiresMFA) {
-        setTempToken(response.data.tempToken);
-        setShowMFA(true);
-      } else {
-        navigate('/');
-      }
+      await resetPassword(token, formData.password);
+      navigate('/login', { state: { message: 'Password reset successful. Please login with your new password.' } });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to login');
+      setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
       setLoading(false);
     }
   };
-
-  const handleMFASuccess = () => {
-    navigate('/');
-  };
-
-  if (showMFA) {
-    return <MFAVerification onSuccess={handleMFASuccess} tempToken={tempToken} />;
-  }
 
   return (
     <Container maxWidth="sm">
@@ -111,10 +100,10 @@ const Login = () => {
                 fontWeight: 'bold',
               }}
             >
-              Welcome Back
+              Set New Password
             </Typography>
           </Box>
-          
+
           {error && (
             <Alert severity="error" sx={{ mb: 2 }}>
               {error}
@@ -124,22 +113,7 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="Email"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              margin="normal"
-              required
-              sx={{
-                '& .MuiOutlinedInput-root': {
-                  backgroundColor: alpha(theme.palette.background.paper, 0.9),
-                }
-              }}
-            />
-            <TextField
-              fullWidth
-              label="Password"
+              label="New Password"
               name="password"
               type="password"
               value={formData.password}
@@ -149,7 +123,22 @@ const Login = () => {
               sx={{
                 '& .MuiOutlinedInput-root': {
                   backgroundColor: alpha(theme.palette.background.paper, 0.9),
-                }
+                },
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Confirm New Password"
+              name="confirmPassword"
+              type="password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              margin="normal"
+              required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  backgroundColor: alpha(theme.palette.background.paper, 0.9),
+                },
               }}
             />
             <Button
@@ -168,16 +157,16 @@ const Login = () => {
                 },
               }}
             >
-              {loading ? <CircularProgress size={24} /> : 'Login'}
+              {loading ? <CircularProgress size={24} /> : 'Reset Password'}
             </Button>
           </form>
 
           <Box sx={{ mt: 2, textAlign: 'center' }}>
             <Typography variant="body2" sx={{ color: theme.palette.text.secondary }}>
-              Don't have an account?{' '}
+              Remember your password?{' '}
               <Link
                 component={RouterLink}
-                to="/register"
+                to="/login"
                 sx={{
                   color: theme.palette.primary.main,
                   textDecoration: 'none',
@@ -186,22 +175,7 @@ const Login = () => {
                   },
                 }}
               >
-                Sign up
-              </Link>
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1, color: theme.palette.text.secondary }}>
-              <Link
-                component={RouterLink}
-                to="/forgot-password"
-                sx={{
-                  color: theme.palette.primary.main,
-                  textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
-                }}
-              >
-                Forgot password?
+                Sign in
               </Link>
             </Typography>
           </Box>
@@ -211,4 +185,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ResetPassword; 

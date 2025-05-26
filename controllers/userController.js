@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const asyncHandler = require('express-async-handler');
 
 // Get all users (admin only)
 const getAllUsers = async (req, res) => {
@@ -161,33 +162,28 @@ const updateProfile = async (req, res) => {
 };
 
 // Change password
-const changePassword = async (req, res) => {
+const changePassword = asyncHandler(async (req, res) => {
     const { currentPassword, newPassword } = req.body;
-    try {
-        const user = await User.findById(req.user._id);
-        if (!user) {
-            return res.status(404).json({ message: 'User not found' });
-        }
-
-        // Compare current password
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: 'Current password is incorrect' });
-        }
-
-        // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-        
-        // Update password
-        user.password = hashedPassword;
-        await user.save();
-        
-        res.status(200).json({ message: 'Password updated successfully' });
-    } catch (err) {
-        res.status(500).json({ message: 'Server error' });
+    
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
     }
-};
+
+    // Check if current password matches
+    const isMatch = await user.matchPassword(currentPassword);
+    if (!isMatch) {
+        res.status(400);
+        throw new Error('Current password is incorrect');
+    }
+
+    // Update password
+    user.password = newPassword; // Password will be hashed by the pre-save middleware
+    await user.save();
+    
+    res.status(200).json({ message: 'Password updated successfully' });
+});
 
 // Export all functions using module.exports
 module.exports = {
