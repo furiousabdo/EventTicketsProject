@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { MusicNote as MusicNoteIcon } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
+import PasswordInput from '../common/PasswordInput';
 
 const Register = () => {
   const theme = useTheme();
@@ -185,11 +186,9 @@ const Register = () => {
                 }}
               />
             )}
-            <TextField
-              fullWidth
+            <PasswordInput
               label="Password"
               name="password"
-              type="password"
               value={formData.password}
               onChange={handleChange}
               margin="normal"
@@ -200,11 +199,9 @@ const Register = () => {
                 },
               }}
             />
-            <TextField
-              fullWidth
+            <PasswordInput
               label="Confirm Password"
               name="confirmPassword"
-              type="password"
               value={formData.confirmPassword}
               onChange={handleChange}
               margin="normal"

@@ -18,6 +18,7 @@ import { useAuth } from '../../context/AuthContext';
 import { userAPI } from '../../utils/api';
 import { showToast } from '../../utils/toast';
 import MFASetup from '../auth/MFASetup';
+import PasswordInput from '../common/PasswordInput';
 
 const buttonStyle = {
   background: 'linear-gradient(45deg, #6a1b9a 30%, #9c27b0 90%)',
@@ -253,11 +254,10 @@ const Profile = () => {
             {pwSuccess && <Alert severity="success" sx={{ mb: 2 }}>{pwSuccess}</Alert>}
             
             <form onSubmit={handlePasswordSubmit}>
-              <TextField
+              <PasswordInput
                 fullWidth
                 label="Current Password"
                 name="currentPassword"
-                type="password"
                 value={passwordForm.currentPassword}
                 onChange={handlePasswordChange}
                 margin="normal"
@@ -275,11 +275,10 @@ const Profile = () => {
                   }
                 }}
               />
-              <TextField
+              <PasswordInput
                 fullWidth
                 label="New Password"
                 name="newPassword"
-                type="password"
                 value={passwordForm.newPassword}
                 onChange={handlePasswordChange}
                 margin="normal"
@@ -297,11 +296,10 @@ const Profile = () => {
                   }
                 }}
               />
-              <TextField
+              <PasswordInput
                 fullWidth
                 label="Confirm New Password"
                 name="confirmPassword"
-                type="password"
                 value={passwordForm.confirmPassword}
                 onChange={handlePasswordChange}
                 margin="normal"
