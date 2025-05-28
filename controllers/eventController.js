@@ -28,7 +28,8 @@ exports.createEvent = asyncHandler(async (req, res) => {
     price: Number(price),
     totalTickets: parsedTotalTickets,
     ticketsAvailable: parsedTotalTickets,
-    organizer: req.user._id
+    organizer: req.user._id,
+    imageUrl: req.file ? req.file.path : req.body.imageUrl // Use uploaded image URL if available
   });
 
   res.status(201).json(event);

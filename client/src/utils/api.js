@@ -61,8 +61,22 @@ export const authAPI = {
 export const eventsAPI = {
   getAllEvents: () => api.get('/events'),
   getEvent: (id) => api.get(`/events/${id}`),
-  createEvent: (eventData) => api.post('/events', eventData),
-  updateEvent: (id, eventData) => api.put(`/events/${id}`, eventData),
+  createEvent: (eventData) => {
+    const config = {
+      headers: {
+        'Content-Type': eventData instanceof FormData ? 'multipart/form-data' : 'application/json'
+      }
+    };
+    return api.post('/events', eventData, config);
+  },
+  updateEvent: (id, eventData) => {
+    const config = {
+      headers: {
+        'Content-Type': eventData instanceof FormData ? 'multipart/form-data' : 'application/json'
+      }
+    };
+    return api.put(`/events/${id}`, eventData, config);
+  },
   deleteEvent: (id) => api.delete(`/events/${id}`),
   getMyEvents: () => api.get('/events/my-events'),
   getEventAnalytics: (id) => api.get(`/events/${id}/analytics`)

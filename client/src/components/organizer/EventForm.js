@@ -68,36 +68,42 @@ const EventForm = () => {
       return;
     }
     
-    const eventData = {
-      title: form.title,
-      description: form.description,
-      date: form.date,
-      location: form.location,
-      price: Number(form.price),
-      totalTickets: totalTicketsNum,
-      imageUrl: form.imageUrl
-    };
-
-    console.log('Submitting event data:', eventData);  // Debug log
+    const formData = new FormData();
+    formData.append('title', form.title);
+    formData.append('description', form.description);
+    formData.append('date', form.date);
+    formData.append('location', form.location);
+    formData.append('price', form.price);
+    formData.append('totalTickets', totalTicketsNum);
+    
+    if (image) {
+      formData.append('image', image);
+    } else if (form.imageUrl) {
+      formData.append('imageUrl', form.imageUrl);
+    }
 
     try {
       if (id) {
-        const response = await eventsAPI.updateEvent(id, eventData);
-        console.log('Update response:', response);  // Debug log
+        const response = await eventsAPI.updateEvent(id, formData);
         setSuccess('Event updated successfully!');
       } else {
-        const response = await eventsAPI.createEvent(eventData);
-        console.log('Create response:', response);  // Debug log
+        const response = await eventsAPI.createEvent(formData);
         setSuccess('Event created successfully!');
         setForm({
-          title: '', description: '', date: '', location: '', price: '', totalTickets: '', imageUrl: ''
+          title: '',
+          description: '',
+          date: '',
+          location: '',
+          price: '',
+          totalTickets: '',
+          imageUrl: ''
         });
         setImage(null);
         setPreviewUrl(null);
       }
       setTimeout(() => navigate('/organizer/events'), 1200);
     } catch (err) {
-      console.error('Error submitting form:', err);  // Debug log
+      console.error('Error submitting form:', err);
       setError(err.response?.data?.message || 'Failed to save event');
     } finally {
       setLoading(false);
