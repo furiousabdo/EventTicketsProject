@@ -45,7 +45,8 @@ const MyEvents = () => {
       await eventsAPI.deleteEvent(id);
       setEvents((prev) => prev.filter(e => e._id !== id));
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete event');
+      alert(err.response?.data?.message || 'Failed to delete event. Please try again later.');
+      console.error('Delete event error:', err);
     }
   };
 
